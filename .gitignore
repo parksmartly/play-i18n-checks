@@ -8,6 +8,16 @@
 # Intellij Idea
 .idea
 .idea_modules
+*.iml
+
+# Netbeans
+nbproject
+build/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
 
 # Maven
 target
