@@ -24,13 +24,23 @@ public class LabelMessageChecker {
     public static Set<String> foundEng = new TreeSet<>();
     public static Set<String> foundFra = new TreeSet<>();
     public static Set<String> foundNl = new TreeSet<>();
+    public static Set<String> notFoundEng = new TreeSet<>();
+    public static Set<String> notFoundFra = new TreeSet<>();
+    public static Set<String> notFoundNl = new TreeSet<>();
+    public static Set<String> notFoundInTemplateEng = new TreeSet<>();
+    public static Set<String> notFoundInTemplateFra = new TreeSet<>();
+    public static Set<String> notFoundInTemplateNl = new TreeSet<>();
+    public static Set<String> totalEng = new TreeSet<>();
+    public static Set<String> totalFra = new TreeSet<>();
+    public static Set<String> totalNl = new TreeSet<>();
+    public static List<String> filesChecked = new ArrayList<>();
     public static boolean notFound = false;
     public static boolean readLine = true;
     public static boolean readFile = true;
 
     public static void main(String[] args) throws IOException {
 
-        System.out.println(System.getProperty("user.dir"));
+//        System.out.println(System.getProperty("user.dir"));
         file = new File(System.getProperty("user.dir"));
 
         File config = new File(file.getPath() + sep + "application.conf");
@@ -52,7 +62,7 @@ public class LabelMessageChecker {
         unDecectabels = Arrays.asList(line.substring(line.indexOf("=")+1));
 
         for (String s : unDecectabels){
-            System.out.println("ignored when not found: " + s);
+//            System.out.println("ignored when not found: " + s);
             foundEng.add(s);
             foundFra.add(s);
             foundNl.add(s);
@@ -156,9 +166,8 @@ public class LabelMessageChecker {
                                             }
                                         }
                                     } catch (Exception m) {
-                                        System.out.println("not in eng: " + message);
-
-//                                        System.out.println(message);
+                                        notFoundInTemplateEng.add(message);
+//                                        System.out.println("not in eng: " + message);
                                         notFound = true;
                                     }
                                     try {
@@ -169,7 +178,8 @@ public class LabelMessageChecker {
                                             }
                                         }
                                     } catch (Exception m) {
-                                        System.out.println("not in fra: " + message);
+                                        notFoundInTemplateFra.add(message);
+//                                        System.out.println("not in fra: " + message);
                                         notFound = true;
                                     }
                                     try {
@@ -180,7 +190,8 @@ public class LabelMessageChecker {
                                             }
                                         }
                                     } catch (Exception m) {
-                                        System.out.println("not in nl: " + message);
+                                        notFoundInTemplateNl.add(message);
+//                                        System.out.println("not in nl: " + message);
                                         notFound = true;
                                     }
                                 }
@@ -193,8 +204,9 @@ public class LabelMessageChecker {
 
                     }catch (NullPointerException e){
                         if(notFound){
-                            System.out.println("file checked: "+ f.getPath());
-                            System.out.println(e);
+                            filesChecked.add(f.getPath());
+//                            System.out.println("file checked: "+ f.getPath());
+//                            System.out.println(e);
                         }
                         notFound = false;
                         readFile = false;
@@ -211,18 +223,15 @@ public class LabelMessageChecker {
         getMessagesFiles();
         String label;
         String subLabel;
-        int i = 0;
-        int j = 0;
         while (true) {
             try {
                 label = eng.readLine();
                 if (label.contains("=") && !label.contains("#")){
                     subLabel = label.substring(0,label.indexOf("=")).trim();
                     if (!foundEng.contains(subLabel)) {
-                        System.out.println("not used in eng: " + label);
-                        i++;
+                        notFoundEng.add(label);
                     }
-                    j++;
+                    totalEng.add(label);
                 }
             } catch (Exception m) {
                 break;
@@ -237,8 +246,9 @@ public class LabelMessageChecker {
                 if (label.contains("=") && !label.contains("#")) {
                     subLabel = label.substring(0,label.indexOf("=")).trim();
                     if (!foundFra.contains(subLabel)) {
-                        System.out.println("not used in fra: " + label);
+                        notFoundFra.add(label);
                     }
+                    totalFra.add(label);
                 }
 
 
@@ -252,8 +262,9 @@ public class LabelMessageChecker {
                 if (label.contains("=") && !label.contains("#")) {
                     subLabel = label.substring(0,label.indexOf("=")).trim();
                     if (!foundNl.contains(subLabel)) {
-                        System.out.println("not used in nl: " + label);
+                        notFoundNl.add(label);
                     }
+                    totalNl.add(label);
                 }
 
 
@@ -261,9 +272,6 @@ public class LabelMessageChecker {
                 break;
             }
         }
-        System.out.println("english labels used :" + foundEng.size());
-        System.out.println("english labels not used: " + i);
-        System.out.println("english labels total: " + j);
     }
 
     public static void getMessagesFiles() throws IOException {
