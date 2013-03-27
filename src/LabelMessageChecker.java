@@ -34,7 +34,7 @@ public class LabelMessageChecker {
         File config = new File(file.getPath() + sep + "application.conf");
         if(!config.exists()){
             BufferedWriter FW = new BufferedWriter(new FileWriter(config));
-            FW.write("#Project folder name =\r\n");
+            FW.write("#Project folder directory =\r\n");
             FW.write("#label names excluded from search =\r\n");
             FW.write("#labels that are there but are not detected =\r\n");
             FW.flush();
@@ -42,7 +42,8 @@ public class LabelMessageChecker {
         }
         BufferedReader BR = new BufferedReader(new FileReader(config));
         String line = BR.readLine();
-        String projectName = line.substring(line.indexOf("=")+1);
+        String projectDirectory = line.substring(line.indexOf("=")+1);
+        homeFolder = new File(projectDirectory);
         line = BR.readLine();
         readException = line.substring(line.indexOf("=")+1);
         line = BR.readLine();
@@ -54,11 +55,6 @@ public class LabelMessageChecker {
             foundFra.add(s);
             foundNl.add(s);
         }
-
-        do{
-        file = file.getParentFile();
-        }while(!file.getPath().endsWith(projectName));
-        homeFolder = file;
 
         getMessagesFiles();
         file = new File(homeFolder.getPath()+ sep + "app");
