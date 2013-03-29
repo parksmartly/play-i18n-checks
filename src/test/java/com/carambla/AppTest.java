@@ -12,7 +12,6 @@ public class AppTest extends TestCase{
     public void testapp() throws IOException {
         LabelMessageChecker lmc = new LabelMessageChecker();
         lmc.run();
-        System.out.println(lmc.homeFolder);
         assertTrue(lmc.totalEng.size() == 5);
         assertTrue(lmc.notFoundEng.size() == 0);
         assertTrue(lmc.notFoundInTemplateEng.size() == 0);
