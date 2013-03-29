@@ -11,8 +11,15 @@ import java.util.*;
 public class LabelMessageChecker {
 
     public final char sep = File.separatorChar;
+    /*
+    labels or false positives that should not be recorded
+     */
     public String readException;
-    public List<String> unDecectabels;
+    /*
+    labels that are not found by the checker but are used
+    if those labels are not in the template files, then they will be reported missing(notFoundInTemplate)
+     */
+    public List<String> unDetectables;
     public BufferedReader bufferedReader;
     public File file;
     public File homeFolder;
@@ -21,18 +28,25 @@ public class LabelMessageChecker {
     public BufferedReader nl;
     public String buffer;
     public String message;
-    public Set<String> foundEng = new TreeSet<>();
-    public Set<String> foundFra = new TreeSet<>();
-    public Set<String> foundNl = new TreeSet<>();
-    public Set<String> notFoundEng = new TreeSet<>();
-    public Set<String> notFoundFra = new TreeSet<>();
-    public Set<String> notFoundNl = new TreeSet<>();
-    public Set<String> notFoundInTemplateEng = new TreeSet<>();
-    public Set<String> notFoundInTemplateFra = new TreeSet<>();
-    public Set<String> notFoundInTemplateNl = new TreeSet<>();
+    //total = templates
     public Set<String> totalEng = new TreeSet<>();
     public Set<String> totalFra = new TreeSet<>();
     public Set<String> totalNl = new TreeSet<>();
+    //NotFound =  (templates - (foundLabels - unDetectables - readExceptions))
+    //Notfound = total - found
+    public Set<String> notFoundEng = new TreeSet<>();
+    public Set<String> notFoundFra = new TreeSet<>();
+    public Set<String> notFoundNl = new TreeSet<>();
+    //notFoundInTemplates = ((foundLabels - readExceptions) + unDectectables) - templates
+    public Set<String> notFoundInTemplateEng = new TreeSet<>();
+    public Set<String> notFoundInTemplateFra = new TreeSet<>();
+    public Set<String> notFoundInTemplateNl = new TreeSet<>();
+    //found = (templates - ((foundLabels - readExceptions) + unDetectables)
+    //found = total - notFound
+    public Set<String> foundEng = new TreeSet<>();
+    public Set<String> foundFra = new TreeSet<>();
+    public Set<String> foundNl = new TreeSet<>();
+
     public List<String> filesChecked = new ArrayList<>();
     public boolean notFound = false;
     public boolean readLine = true;
@@ -65,16 +79,11 @@ public class LabelMessageChecker {
         String projectDirectory = line.substring(line.indexOf("=")+1);
         homeFolder = new File(projectDirectory);
         line = BR.readLine();
-        readException = line.substring(line.indexOf("=")+1);
+        line = line.substring(line.indexOf("=")+1);
+        readException = line;
         line = BR.readLine();
-        unDecectabels = Arrays.asList(line.substring(line.indexOf("=")+1));
-
-        for (String s : unDecectabels){
-//            System.out.println("ignored when not found: " + s);
-            foundEng.add(s);
-            foundFra.add(s);
-            foundNl.add(s);
-        }
+        line = line.substring(line.indexOf("=")+1);
+        unDetectables = line.isEmpty()? new ArrayList<String>() : Arrays.asList(line);
 
         getMessagesFiles();
         file = new File(homeFolder.getPath()+ sep + "app");
@@ -237,11 +246,25 @@ public class LabelMessageChecker {
                 if (label.contains("=") && !label.contains("#")){
                     subLabel = label.substring(0,label.indexOf("=")).trim();
                     if (!foundEng.contains(subLabel)) {
-                        notFoundEng.add(label);
+                        if(unDetectables.contains(subLabel)){
+                            foundEng.add(subLabel);
+                        }
+                        else{
+                            if(!readException.contains(subLabel)){
+                                notFoundEng.add(subLabel);
+                            }
+                        }
+
                     }
-                    totalEng.add(label);
+                    totalEng.add(subLabel);
                 }
-            } catch (Exception m) {
+            } catch (NullPointerException m) {
+                for(String s: unDetectables){
+                    if (!totalEng.contains(s)) {
+                        notFoundInTemplateEng.add(s);
+                    }
+                }
+
                 break;
             }
         }
@@ -254,13 +277,27 @@ public class LabelMessageChecker {
                 if (label.contains("=") && !label.contains("#")) {
                     subLabel = label.substring(0,label.indexOf("=")).trim();
                     if (!foundFra.contains(subLabel)) {
-                        notFoundFra.add(label);
+                        if(unDetectables.contains(subLabel)){
+                            foundFra.add(subLabel);
+                        }
+                        else{
+                            if(!readException.contains(subLabel)){
+                                notFoundFra.add(subLabel);
+                            }
+                        }
+
                     }
-                    totalFra.add(label);
+                    totalFra.add(subLabel);
                 }
 
 
-            } catch (Exception m) {
+            } catch (NullPointerException m) {
+                for(String s: unDetectables){
+                    if (!totalFra.contains(s)) {
+                        notFoundInTemplateFra.add(s);
+
+                    }
+                }
                 break;
             }
         }
@@ -270,13 +307,27 @@ public class LabelMessageChecker {
                 if (label.contains("=") && !label.contains("#")) {
                     subLabel = label.substring(0,label.indexOf("=")).trim();
                     if (!foundNl.contains(subLabel)) {
-                        notFoundNl.add(label);
+                        if(unDetectables.contains(subLabel)){
+                            foundNl.add(subLabel);
+                        }
+                        else{
+                            if(!readException.contains(subLabel)){
+                                notFoundNl.add(subLabel);
+                            }
+                        }
+
                     }
-                    totalNl.add(label);
+
+                    totalNl.add(subLabel);
                 }
 
 
-            } catch (Exception m) {
+            } catch (NullPointerException m) {
+                for(String s: unDetectables){
+                    if (!totalNl.contains(s)) {
+                        notFoundInTemplateNl.add(s);
+                    }
+                }
                 break;
             }
         }

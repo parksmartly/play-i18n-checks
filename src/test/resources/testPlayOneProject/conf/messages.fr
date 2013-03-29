@@ -1,0 +1,4 @@
+menu.faq = Questions fréquentes
+menu.login = Connexion
+menu.logout = Déconnecter
+menu.register = Inscrire
