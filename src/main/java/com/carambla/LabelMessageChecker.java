@@ -10,37 +10,45 @@ import java.util.*;
  */
 public class LabelMessageChecker {
 
-    public final static char sep = File.separatorChar;
-    public static String readException;
-    public static List<String> unDecectabels;
-    public static BufferedReader bufferedReader;
-    public static File file;
-    public static File homeFolder;
-    public static BufferedReader eng;
-    public static BufferedReader fra;
-    public static BufferedReader nl;
-    public static String buffer;
-    public static String message;
-    public static Set<String> foundEng = new TreeSet<>();
-    public static Set<String> foundFra = new TreeSet<>();
-    public static Set<String> foundNl = new TreeSet<>();
-    public static Set<String> notFoundEng = new TreeSet<>();
-    public static Set<String> notFoundFra = new TreeSet<>();
-    public static Set<String> notFoundNl = new TreeSet<>();
-    public static Set<String> notFoundInTemplateEng = new TreeSet<>();
-    public static Set<String> notFoundInTemplateFra = new TreeSet<>();
-    public static Set<String> notFoundInTemplateNl = new TreeSet<>();
-    public static Set<String> totalEng = new TreeSet<>();
-    public static Set<String> totalFra = new TreeSet<>();
-    public static Set<String> totalNl = new TreeSet<>();
-    public static List<String> filesChecked = new ArrayList<>();
-    public static boolean notFound = false;
-    public static boolean readLine = true;
-    public static boolean readFile = true;
+    public final char sep = File.separatorChar;
+    public String readException;
+    public List<String> unDecectabels;
+    public BufferedReader bufferedReader;
+    public File file;
+    public File homeFolder;
+    public BufferedReader eng;
+    public BufferedReader fra;
+    public BufferedReader nl;
+    public String buffer;
+    public String message;
+    public Set<String> foundEng = new TreeSet<>();
+    public Set<String> foundFra = new TreeSet<>();
+    public Set<String> foundNl = new TreeSet<>();
+    public Set<String> notFoundEng = new TreeSet<>();
+    public Set<String> notFoundFra = new TreeSet<>();
+    public Set<String> notFoundNl = new TreeSet<>();
+    public Set<String> notFoundInTemplateEng = new TreeSet<>();
+    public Set<String> notFoundInTemplateFra = new TreeSet<>();
+    public Set<String> notFoundInTemplateNl = new TreeSet<>();
+    public Set<String> totalEng = new TreeSet<>();
+    public Set<String> totalFra = new TreeSet<>();
+    public Set<String> totalNl = new TreeSet<>();
+    public List<String> filesChecked = new ArrayList<>();
+    public boolean notFound = false;
+    public boolean readLine = true;
+    public boolean readFile = true;
 
-    public static void main(String[] args) throws IOException {
+    public LabelMessageChecker(){
 
-//        System.out.println(System.getProperty("user.dir"));
+    }
+
+    public static void main(String[] args)  throws IOException{
+        new LabelMessageChecker().run();
+//
+    }
+
+    public void run()throws IOException{
+        System.out.println(System.getProperty("user.dir"));
         file = new File(System.getProperty("user.dir"));
 
         File config = new File(file.getPath() + sep + "application.conf");
@@ -73,9 +81,9 @@ public class LabelMessageChecker {
         searchThroughDirectory(file);
         searchForUnusedLabel();
 
-    }
+        }
 
-    public static void searchThroughDirectory (File dir) throws IOException {
+    public void searchThroughDirectory (File dir) throws IOException {
         for (File f : dir.listFiles()){
             if (f.isDirectory()){
 
@@ -219,7 +227,7 @@ public class LabelMessageChecker {
 
     }
 
-    public static void searchForUnusedLabel() throws IOException {
+    public void searchForUnusedLabel() throws IOException {
         getMessagesFiles();
         String label;
         String subLabel;
@@ -274,7 +282,7 @@ public class LabelMessageChecker {
         }
     }
 
-    public static void getMessagesFiles() throws IOException {
+    public void getMessagesFiles() throws IOException {
         eng = new BufferedReader(new FileReader(new File(homeFolder.getPath()+ sep + "conf" + sep + "messages")));
         fra = new BufferedReader(new FileReader(new File(homeFolder.getPath()+ sep + "conf" + sep + "messages.fr")));
         nl = new BufferedReader(new FileReader(new File(homeFolder.getPath()+ sep + "conf" + sep + "messages.nl")));
