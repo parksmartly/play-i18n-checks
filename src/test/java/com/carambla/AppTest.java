@@ -1,32 +1,36 @@
 package com.carambla;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
+
+import org.junit.Test;
+import static org.junit.Assert.*;
+
+import java.io.File;
 import java.io.IOException;
 
-public class AppTest extends TestCase{
+public class AppTest{
 
 
+    @Test
     public void testapp() throws IOException {
-        LabelMessageChecker lmc = new LabelMessageChecker();
-        lmc.run();
-        assertTrue(lmc.totalEng.size() == 5);
-        assertTrue(lmc.notFoundEng.size() == 0);
-        assertTrue(lmc.notFoundInTemplateEng.size() == 0);
-        assertTrue(lmc.foundEng.size() == 4);
+        Configuration configuration = new Configuration();
+        configuration.homeFolder = new File("src/test/resources/testPlayOneProject");
 
-        assertTrue(lmc.totalFra.size() == 4);
-        assertTrue(lmc.notFoundFra.size() == 0);
-        assertTrue(lmc.notFoundInTemplateFra.size() == 1);
-        assertTrue(lmc.foundFra.size() == 3);
+        LabelMessageChecker checker = new LabelMessageChecker();
+        LabelMessageChecker.Result result = checker.run(configuration);
+        assertEquals(5, result.totalEng.size());
+        assertEquals(1, result.notFoundEng.size());
+        assertEquals(1, result.notFoundInTemplateEng.size());
+        assertEquals(4, result.foundEng.size());
 
-        assertTrue(lmc.totalNl.size() == 4);
-        assertTrue(lmc.notFoundNl.size() == 1);
-        assertTrue(lmc.notFoundInTemplateNl.size() == 2);
-        assertTrue(lmc.foundNl.size() == 2);
+        assertEquals(4, result.totalFra.size());
+        assertEquals(0, result.notFoundFra.size());
+        assertEquals(1, result.notFoundInTemplateFra.size());
+        assertEquals(4, result.foundFra.size());
 
-
+        assertEquals(4, result.totalNl.size());
+        assertEquals(1, result.notFoundNl.size());
+        assertEquals(2, result.notFoundInTemplateNl.size());
+        assertEquals(3, result.foundNl.size());
     }
 }

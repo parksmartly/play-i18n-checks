@@ -10,233 +10,194 @@ import java.util.*;
  */
 public class LabelMessageChecker {
 
-    public final char sep = File.separatorChar;
-    /*
-    labels or false positives that should not be recorded
-     */
-    public String readException;
-    /*
-    labels that are not found by the checker but are used
-    if those labels are not in the template files, then they will be reported missing(notFoundInTemplate)
-     */
-    public List<String> unDetectables;
-    public BufferedReader bufferedReader;
-    public File file;
-    public File homeFolder;
+    private static final char SEPARATOR = File.separatorChar;
+
+    private Configuration configuration;
+
     public BufferedReader eng;
     public BufferedReader fra;
     public BufferedReader nl;
-    public String buffer;
-    public String message;
-    //total = templates
-    public Set<String> totalEng = new TreeSet<>();
-    public Set<String> totalFra = new TreeSet<>();
-    public Set<String> totalNl = new TreeSet<>();
-    //NotFound =  (templates - (foundLabels - unDetectables - readExceptions))
-    //Notfound = total - found
-    public Set<String> notFoundEng = new TreeSet<>();
-    public Set<String> notFoundFra = new TreeSet<>();
-    public Set<String> notFoundNl = new TreeSet<>();
-    //notFoundInTemplates = ((foundLabels - readExceptions) + unDectectables) - templates
-    public Set<String> notFoundInTemplateEng = new TreeSet<>();
-    public Set<String> notFoundInTemplateFra = new TreeSet<>();
-    public Set<String> notFoundInTemplateNl = new TreeSet<>();
-    //found = (templates - ((foundLabels - readExceptions) + unDetectables)
-    //found = total - notFound
-    public Set<String> foundEng = new TreeSet<>();
-    public Set<String> foundFra = new TreeSet<>();
-    public Set<String> foundNl = new TreeSet<>();
-
-    public List<String> filesChecked = new ArrayList<>();
-    public boolean notFound = false;
-    public boolean readLine = true;
-    public boolean readFile = true;
 
     public LabelMessageChecker(){
 
     }
 
     public static void main(String[] args)  throws IOException{
-        new LabelMessageChecker().run();
-//
+        System.out.println(System.getProperty("user.dir"));
+        File userDir = new File(System.getProperty("user.dir"));
+
+        File configurationFile = new File(userDir.getPath() + SEPARATOR + "application.conf");
+
+        ConfigurationReader reader = new ConfigurationReader();
+        reader.writeDefaultConfigurationIfMissing(configurationFile);
+        Configuration configuration = reader.read(configurationFile);
+
+        new LabelMessageChecker().run(configuration);
     }
 
-    public void run()throws IOException{
-        System.out.println(System.getProperty("user.dir"));
-        file = new File(System.getProperty("user.dir"));
+    public Result run(Configuration configuration)throws IOException{
+        this.configuration = configuration;
 
-        File config = new File(file.getPath() + sep + "application.conf");
-        if(!config.exists()){
-            BufferedWriter FW = new BufferedWriter(new FileWriter(config));
-            FW.write("#Project folder directory =\r\n");
-            FW.write("#label names excluded from search =\r\n");
-            FW.write("#labels that are there but are not detected =\r\n");
-            FW.flush();
-
-        }
-        BufferedReader BR = new BufferedReader(new FileReader(config));
-        String line = BR.readLine();
-        String projectDirectory = line.substring(line.indexOf("=")+1);
-        homeFolder = new File(projectDirectory);
-        line = BR.readLine();
-        line = line.substring(line.indexOf("=")+1);
-        readException = line;
-        line = BR.readLine();
-        line = line.substring(line.indexOf("=")+1);
-        unDetectables = line.isEmpty()? new ArrayList<String>() : Arrays.asList(line);
-
-        getMessagesFiles();
-        file = new File(homeFolder.getPath()+ sep + "app");
-        searchThroughDirectory(file);
-        searchForUnusedLabel();
-
+        File playAppDirectory = new File(configuration.homeFolder.getPath() + SEPARATOR + "app");
+        if(!playAppDirectory.exists()){
+            throw new RuntimeException("App directory missing: " + playAppDirectory.getPath());
         }
 
-    public void searchThroughDirectory (File dir) throws IOException {
-        for (File f : dir.listFiles()){
-            if (f.isDirectory()){
+        if(!playAppDirectory.isDirectory()){
+            throw new RuntimeException(playAppDirectory.getPath() + " is not a directory");
+        }
 
-                searchThroughDirectory(f);
+        Result result = new Result();
+        searchThroughDirectory(result, playAppDirectory);
+        searchForUnusedLabel(result);
+        return result;
+    }
 
-
+    public void searchThroughDirectory (Result result, File dir) throws IOException {
+        for (File file : dir.listFiles()){
+            if (file.isDirectory()){
+                searchThroughDirectory(result, file);
             }else{
-//                System.out.println(f.getPath());
-                bufferedReader = new BufferedReader(new FileReader(f));
-                //read the file till end
-                readFile = true;
-                while(readFile){
-                    try{
-                        buffer = bufferedReader.readLine();
-                        readLine = true;
-                        // read the line until te end
-                        while (readLine) {
+                //if(file.getName().endsWith(".html")){
+                    readFile(result, file);
+                //}
+            }
+        }
+    }
 
-                            if (buffer.contains("&{\'") || buffer.contains("Messages.get(\"") || buffer.contains("#{errors [\'") || (buffer.contains("#{") && buffer.contains("/}") && (buffer.substring(1).contains("\'")) ) ){
-                                int i = 1000000;
-                                int j = 1000000;
-                                if (buffer.contains("&{\'")) {
-                                    i = buffer.indexOf('&') + 3;
-                                    j = buffer.indexOf('\'', i);
-                                }
-                                if (buffer.contains("Messages.get")) {
-                                    if (i > (buffer.indexOf("Messages.get") + 14)) {
-                                        i = buffer.indexOf("Messages.get") + 14;
-                                        j = buffer.indexOf("\"", i);
-                                    }
-
-
-                                }
-                                if(buffer.contains("#{errors [\'")){
-                                    if(i>(buffer.indexOf("#{errors [\'") + 11)){
-                                        i = buffer.indexOf("#{errors [\'") + 11;
-                                        buffer = "#{errors [\'" + buffer.substring(i);
-                                        i = buffer.indexOf("[\'") + 2;
-                                        j = buffer.indexOf("\'",i);
-                                        buffer = buffer.substring(0 , j+2) + "#{errors [" + buffer.substring(j + 2);
-                                    }
-
-                                }
-                                if (buffer.contains("#{") && buffer.contains("/}") && !buffer.contains("#{errors [")){
-                                    if(i>(buffer.indexOf("#{"))){
-                                        boolean noComma = true;
-                                        boolean commaIsBefore = true;
-//                                        System.out.println("before: " + buffer);
-                                        i = buffer.indexOf("#{");
-                                        j = buffer.indexOf("/}", i);
-                                        if(buffer.contains(":") && buffer.contains(",")){
-                                            commaIsBefore = buffer.indexOf(",") < buffer.indexOf(":");
-                                            noComma = false;
-                                        }
-
-                                        if(!commaIsBefore || !buffer.contains("\'")){
-                                            buffer = "STOP" + buffer.substring(j);
-                                            i = 0;
-                                            j = 4;
-                                        }
-                                        else{
-                                            if(commaIsBefore || noComma){
-                                                i = buffer.indexOf("\'") + 1;
-                                                j = buffer.indexOf("\'", i);
-//                                                System.out.println(i + " " +j);
-                                            }
-
-                                        }
-//                                        System.out.println("after: " + buffer);
-                                    }
+    private boolean readFile(Result result, File f) throws IOException {
+        boolean notFound = false;
+        String buffer;
+        // System.out.println(f.getPath());
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(f));
+        //read the userDir till end
+        boolean readFile = true;
+        while(readFile){
+                buffer = bufferedReader.readLine();
+                // read the line until te end
+                while (buffer != null) {
+                    if (buffer.contains("&{\'") || buffer.contains("Messages.get(\"") || buffer.contains("#{errors [\'") || (buffer.contains("#{") && buffer.contains("/}") && (buffer.substring(1).contains("\'")) ) ){
+                        int i = 1000000;
+                        int j = 1000000;
+                        if (buffer.contains("&{\'")) {
+                            i = buffer.indexOf('&') + 3;
+                            j = buffer.indexOf('\'', i);
+                        }
+                        if (buffer.contains("Messages.get")) {
+                            if (i > (buffer.indexOf("Messages.get") + 14)) {
+                                i = buffer.indexOf("Messages.get") + 14;
+                                j = buffer.indexOf("\"", i);
+                            }
 
 
-                                }
-//                                System.out.println(buffer);
-//                                System.out.println(i + " " + j);
-                                message = buffer.substring(i, j);
-//                                System.out.println(message);
-
-                                if (!readException.contains(message)) {
-
-                                    getMessagesFiles();
-                                    try {
-                                        while (true) {
-                                            if (eng.readLine().contains(message)) {
-//                                                System.out.println(message);
-                                                foundEng.add(message);
-                                                break;
-                                            }
-                                        }
-                                    } catch (Exception m) {
-                                        notFoundInTemplateEng.add(message);
-//                                        System.out.println("not in eng: " + message);
-                                        notFound = true;
-                                    }
-                                    try {
-                                        while (true) {
-                                            if (fra.readLine().contains(message)) {
-                                                foundFra.add(message);
-                                                break;
-                                            }
-                                        }
-                                    } catch (Exception m) {
-                                        notFoundInTemplateFra.add(message);
-//                                        System.out.println("not in fra: " + message);
-                                        notFound = true;
-                                    }
-                                    try {
-                                        while (true) {
-                                            if (nl.readLine().contains(message)) {
-                                                foundNl.add(message);
-                                                break;
-                                            }
-                                        }
-                                    } catch (Exception m) {
-                                        notFoundInTemplateNl.add(message);
-//                                        System.out.println("not in nl: " + message);
-                                        notFound = true;
-                                    }
-                                }
-                                buffer = buffer.substring(j);
-                            } else {
-                                readLine = false;
+                        }
+                        if(buffer.contains("#{errors [\'")){
+                            if(i>(buffer.indexOf("#{errors [\'") + 11)){
+                                i = buffer.indexOf("#{errors [\'") + 11;
+                                buffer = "#{errors [\'" + buffer.substring(i);
+                                i = buffer.indexOf("[\'") + 2;
+                                j = buffer.indexOf("\'",i);
+                                buffer = buffer.substring(0 , j+2) + "#{errors [" + buffer.substring(j + 2);
                             }
 
                         }
+                        if (buffer.contains("#{") && buffer.contains("/}") && !buffer.contains("#{errors [")){
+                            if(i>(buffer.indexOf("#{"))){
+                                boolean noComma = true;
+                                boolean commaIsBefore = true;
+//                                        System.out.println("before: " + buffer);
+                                i = buffer.indexOf("#{");
+                                j = buffer.indexOf("/}", i);
+                                if(buffer.contains(":") && buffer.contains(",")){
+                                    commaIsBefore = buffer.indexOf(",") < buffer.indexOf(":");
+                                    noComma = false;
+                                }
 
-                    }catch (NullPointerException e){
-                        if(notFound){
-                            filesChecked.add(f.getPath());
-//                            System.out.println("file checked: "+ f.getPath());
-//                            System.out.println(e);
+                                if(!commaIsBefore || !buffer.contains("\'")){
+                                    buffer = "STOP" + buffer.substring(j);
+                                    i = 0;
+                                    j = 4;
+                                }
+                                else{
+                                    if(commaIsBefore || noComma){
+                                        i = buffer.indexOf("\'") + 1;
+                                        j = buffer.indexOf("\'", i);
+//                                                System.out.println(i + " " +j);
+                                    }
+
+                                }
+//                                        System.out.println("after: " + buffer);
+                            }
+
+
                         }
-                        notFound = false;
-                        readFile = false;
+
+                        String message = buffer.substring(i, j);
+                        System.out.println(message);
+
+                        if (!configuration.readException.contains(message)) {
+
+                            // FIXME why do this multiple times?
+                            getMessagesFiles();
+                            try {
+                                while (true) {
+                                    if (eng.readLine().contains(message)) {
+//                                                System.out.println(message);
+                                        result.foundEng.add(message);
+                                        break;
+                                    }
+                                }
+                            } catch (Exception m) {
+                                result.notFoundInTemplateEng.add(message);
+//                                        System.out.println("not in eng: " + message);
+                                notFound = true;
+                            }
+                            try {
+                                while (true) {
+                                    if (fra.readLine().contains(message)) {
+                                        result.foundFra.add(message);
+                                        break;
+                                    }
+                                }
+                            } catch (Exception m) {
+                                result.notFoundInTemplateFra.add(message);
+//                                        System.out.println("not in fra: " + message);
+                                notFound = true;
+                            }
+                            try {
+                                while (true) {
+                                    if (nl.readLine().contains(message)) {
+                                        result.foundNl.add(message);
+                                        break;
+                                    }
+                                }
+                            } catch (Exception m) {
+                                result.notFoundInTemplateNl.add(message);
+//                                        System.out.println("not in nl: " + message);
+                                notFound = true;
+                            }
+                        }
+                        buffer = buffer.substring(j);
                     }
+
+                    buffer = bufferedReader.readLine();
+
+
                 }
-            }
+
+                if(notFound){
+                    result.filesChecked.add(f.getPath());
+//                            System.out.println("userDir checked: "+ f.getPath());
+//                            System.out.println(e);
+                }
+                notFound = false;
+                readFile = false;
         }
-
-
-
+        return notFound;
     }
 
-    public void searchForUnusedLabel() throws IOException {
+    public void searchForUnusedLabel(Result result) throws IOException {
+
         getMessagesFiles();
         String label;
         String subLabel;
@@ -245,23 +206,23 @@ public class LabelMessageChecker {
                 label = eng.readLine();
                 if (label.contains("=") && !label.contains("#")){
                     subLabel = label.substring(0,label.indexOf("=")).trim();
-                    if (!foundEng.contains(subLabel)) {
-                        if(unDetectables.contains(subLabel)){
-                            foundEng.add(subLabel);
+                    if (!result.foundEng.contains(subLabel)) {
+                        if(configuration.unDetectables.contains(subLabel)){
+                            result.foundEng.add(subLabel);
                         }
                         else{
-                            if(!readException.contains(subLabel)){
-                                notFoundEng.add(subLabel);
+                            if(!configuration.readException.contains(subLabel)){
+                                result.notFoundEng.add(subLabel);
                             }
                         }
 
                     }
-                    totalEng.add(subLabel);
+                    result.totalEng.add(subLabel);
                 }
             } catch (NullPointerException m) {
-                for(String s: unDetectables){
-                    if (!totalEng.contains(s)) {
-                        notFoundInTemplateEng.add(s);
+                for(String s: configuration.unDetectables){
+                    if (!result.totalEng.contains(s)) {
+                        result.notFoundInTemplateEng.add(s);
                     }
                 }
 
@@ -276,25 +237,25 @@ public class LabelMessageChecker {
                 label = fra.readLine();
                 if (label.contains("=") && !label.contains("#")) {
                     subLabel = label.substring(0,label.indexOf("=")).trim();
-                    if (!foundFra.contains(subLabel)) {
-                        if(unDetectables.contains(subLabel)){
-                            foundFra.add(subLabel);
+                    if (!result.foundFra.contains(subLabel)) {
+                        if(configuration.unDetectables.contains(subLabel)){
+                            result.foundFra.add(subLabel);
                         }
                         else{
-                            if(!readException.contains(subLabel)){
-                                notFoundFra.add(subLabel);
+                            if(!configuration.readException.contains(subLabel)){
+                                result.notFoundFra.add(subLabel);
                             }
                         }
 
                     }
-                    totalFra.add(subLabel);
+                    result.totalFra.add(subLabel);
                 }
 
 
             } catch (NullPointerException m) {
-                for(String s: unDetectables){
-                    if (!totalFra.contains(s)) {
-                        notFoundInTemplateFra.add(s);
+                for(String s: configuration.unDetectables){
+                    if (!result.totalFra.contains(s)) {
+                        result.notFoundInTemplateFra.add(s);
 
                     }
                 }
@@ -306,26 +267,26 @@ public class LabelMessageChecker {
                 label = nl.readLine();
                 if (label.contains("=") && !label.contains("#")) {
                     subLabel = label.substring(0,label.indexOf("=")).trim();
-                    if (!foundNl.contains(subLabel)) {
-                        if(unDetectables.contains(subLabel)){
-                            foundNl.add(subLabel);
+                    if (!result.foundNl.contains(subLabel)) {
+                        if(configuration.unDetectables.contains(subLabel)){
+                            result.foundNl.add(subLabel);
                         }
                         else{
-                            if(!readException.contains(subLabel)){
-                                notFoundNl.add(subLabel);
+                            if(!configuration.readException.contains(subLabel)){
+                                result.notFoundNl.add(subLabel);
                             }
                         }
 
                     }
 
-                    totalNl.add(subLabel);
+                    result.totalNl.add(subLabel);
                 }
 
 
             } catch (NullPointerException m) {
-                for(String s: unDetectables){
-                    if (!totalNl.contains(s)) {
-                        notFoundInTemplateNl.add(s);
+                for(String s: configuration.unDetectables){
+                    if (!result.totalNl.contains(s)) {
+                        result.notFoundInTemplateNl.add(s);
                     }
                 }
                 break;
@@ -334,9 +295,35 @@ public class LabelMessageChecker {
     }
 
     public void getMessagesFiles() throws IOException {
-        eng = new BufferedReader(new FileReader(new File(homeFolder.getPath()+ sep + "conf" + sep + "messages")));
-        fra = new BufferedReader(new FileReader(new File(homeFolder.getPath()+ sep + "conf" + sep + "messages.fr")));
-        nl = new BufferedReader(new FileReader(new File(homeFolder.getPath()+ sep + "conf" + sep + "messages.nl")));
+        eng = new BufferedReader(new FileReader(new File(configuration.homeFolder.getPath()+ SEPARATOR + "conf" + SEPARATOR + "messages")));
+        fra = new BufferedReader(new FileReader(new File(configuration.homeFolder.getPath()+ SEPARATOR + "conf" + SEPARATOR + "messages.fr")));
+        nl = new BufferedReader(new FileReader(new File(configuration.homeFolder.getPath()+ SEPARATOR + "conf" + SEPARATOR + "messages.nl")));
+    }
+
+
+
+    public static class Result {
+        //total = templates
+        public Set<String> totalEng = new TreeSet<>();
+        public Set<String> totalFra = new TreeSet<>();
+        public Set<String> totalNl = new TreeSet<>();
+        //NotFound =  (templates - (foundLabels - unDetectables - readExceptions))
+        //Notfound = total - found
+        public Set<String> notFoundEng = new TreeSet<>();
+        public Set<String> notFoundFra = new TreeSet<>();
+        public Set<String> notFoundNl = new TreeSet<>();
+        //notFoundInTemplates = ((foundLabels - readExceptions) + unDectectables) - templates
+        public Set<String> notFoundInTemplateEng = new TreeSet<>();
+        public Set<String> notFoundInTemplateFra = new TreeSet<>();
+        public Set<String> notFoundInTemplateNl = new TreeSet<>();
+        //found = (templates - ((foundLabels - readExceptions) + unDetectables)
+        //found = total - notFound
+        public Set<String> foundEng = new TreeSet<>();
+        public Set<String> foundFra = new TreeSet<>();
+        public Set<String> foundNl = new TreeSet<>();
+
+        public List<String> filesChecked = new ArrayList<>();
 
     }
+
 }
