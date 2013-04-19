@@ -1,0 +1,7 @@
+menu.faq = FAQ
+menu.faq2 = FAQ2
+menu.login = Sign in
+menu.logout = Sign out
+menu.register = Register
+menu.formatted = this {0} format
+menu.doubleFormatted = this {0} format {0}
