@@ -304,25 +304,25 @@ public class LabelMessageChecker {
 
     public static class Result {
         //total = templates
-        public Set<String> totalEng = new TreeSet<>();
-        public Set<String> totalFra = new TreeSet<>();
-        public Set<String> totalNl = new TreeSet<>();
+        public Set<String> totalEng = new TreeSet<String>();
+        public Set<String> totalFra = new TreeSet<String>();
+        public Set<String> totalNl = new TreeSet<String>();
         //NotFound =  (templates - (foundLabels - unDetectables - readExceptions))
         //Notfound = total - found
-        public Set<String> notFoundEng = new TreeSet<>();
-        public Set<String> notFoundFra = new TreeSet<>();
-        public Set<String> notFoundNl = new TreeSet<>();
+        public Set<String> notFoundEng = new TreeSet<String>();
+        public Set<String> notFoundFra = new TreeSet<String>();
+        public Set<String> notFoundNl = new TreeSet<String>();
         //notFoundInTemplates = ((foundLabels - readExceptions) + unDectectables) - templates
-        public Set<String> notFoundInTemplateEng = new TreeSet<>();
-        public Set<String> notFoundInTemplateFra = new TreeSet<>();
-        public Set<String> notFoundInTemplateNl = new TreeSet<>();
+        public Set<String> notFoundInTemplateEng = new TreeSet<String>();
+        public Set<String> notFoundInTemplateFra = new TreeSet<String>();
+        public Set<String> notFoundInTemplateNl = new TreeSet<String>();
         //found = (templates - ((foundLabels - readExceptions) + unDetectables)
         //found = total - notFound
-        public Set<String> foundEng = new TreeSet<>();
-        public Set<String> foundFra = new TreeSet<>();
-        public Set<String> foundNl = new TreeSet<>();
+        public Set<String> foundEng = new TreeSet<String>();
+        public Set<String> foundFra = new TreeSet<String>();
+        public Set<String> foundNl = new TreeSet<String>();
 
-        public List<String> filesChecked = new ArrayList<>();
+        public List<String> filesChecked = new ArrayList<String>();
 
     }
 

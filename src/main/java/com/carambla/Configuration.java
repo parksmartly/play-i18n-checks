@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-class Configuration {
+public class Configuration {
     public File homeFolder;
 
     /**
@@ -18,8 +18,8 @@ class Configuration {
      */
     public List<String> unDetectables ;
 
-    Configuration() {
+    public Configuration() {
         this.readException = "";
-        this.unDetectables = new ArrayList<>();
+        this.unDetectables = new ArrayList<String>();
     }
 }
