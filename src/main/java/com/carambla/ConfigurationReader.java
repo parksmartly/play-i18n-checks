@@ -20,7 +20,7 @@ public class ConfigurationReader {
 
     public Configuration read(File config) throws IOException {
         Configuration configuration = new Configuration();
-        // FIXME proepr stream handling!
+        // FIXME proper stream handling!
         BufferedReader BR = new BufferedReader(new FileReader(config));
         String line = BR.readLine();
         String projectDirectory = line.substring(line.indexOf("=") + 1);

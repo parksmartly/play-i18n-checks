@@ -52,6 +52,107 @@ public class LabelMessageChecker {
         searchForUnusedLabel(result);
         return result;
     }
+    public Map<String,File> translateMessages(Configuration configuration) throws IOException {
+        this.configuration = configuration;
+
+        File playAppDirectory = new File(configuration.homeFolder.getPath() + SEPARATOR + "app");
+        if(!playAppDirectory.exists()){
+            throw new RuntimeException("App directory missing: " + playAppDirectory.getPath());
+        }
+
+        if(!playAppDirectory.isDirectory()){
+            throw new RuntimeException(playAppDirectory.getPath() + " is not a directory");
+        }
+
+        return TranslateMessageFiles();
+    }
+
+    private Map<String,File> TranslateMessageFiles() throws IOException {
+        getMessagesFiles();
+        Map<String,File> map = new TreeMap<String,File>();
+        File file = new File(configuration.homeFolder.getPath()+ SEPARATOR + "conf" + SEPARATOR + "messages.translated");
+        BufferedWriter bf = new BufferedWriter(new FileWriter(file));
+        TranslateMassage(bf, eng);
+        map.put("messages.translated", file);
+        bf = new BufferedWriter(new FileWriter(new File(configuration.homeFolder.getPath()+ SEPARATOR + "conf" + SEPARATOR + "messages.fra.translated")));
+        TranslateMassage(bf, fra);
+        map.put("messages.fra.translated",file);
+        bf = new BufferedWriter(new FileWriter(new File(configuration.homeFolder.getPath()+ SEPARATOR + "conf" + SEPARATOR + "messages.nl.translated")));
+        TranslateMassage(bf, nl);
+        map.put("messages.nl.translated",file);
+
+        return map;
+    }
+    private void TranslateMassage(BufferedWriter bf,BufferedReader br) throws IOException {
+        String buffer = br.readLine();
+        String content = "";
+        int i;
+        int j;
+
+        while(buffer!=null){
+            while(buffer.contains("[") && buffer.contains("]")){
+                i = buffer.indexOf("[");
+                j = buffer.indexOf("]")+1;
+                content += buffer.substring(0,i);
+                content += ("{" + "0" + "}");
+                buffer = buffer.substring(j,buffer.length());
+
+            }
+            content += buffer.substring(0,buffer.length()) + "\n";
+
+            buffer = br.readLine();
+        }
+        bf.write(content);
+        bf.flush();
+        bf.close();
+
+    }
+    public File translateRoute(Configuration configuration) throws IOException {
+        this.configuration = configuration;
+
+        File playAppDirectory = new File(configuration.homeFolder.getPath() + SEPARATOR + "app");
+        if(!playAppDirectory.exists()){
+            throw new RuntimeException("App directory missing: " + playAppDirectory.getPath());
+        }
+
+        if(!playAppDirectory.isDirectory()){
+            throw new RuntimeException(playAppDirectory.getPath() + " is not a directory");
+        }
+
+        return TranslateRouteFile();
+    }
+
+    private File TranslateRouteFile() throws IOException {
+        File routeFile = new File(configuration.homeFolder.getPath()+ SEPARATOR + "conf" + SEPARATOR + "routes");
+        BufferedReader br = new BufferedReader(new FileReader(routeFile));
+        File file = new File(configuration.homeFolder.getPath()+ SEPARATOR + "conf" + SEPARATOR + "routes.translated");
+        BufferedWriter bf = new BufferedWriter(new FileWriter(file));
+
+        String buffer = br.readLine();
+        String buffer2 = "";
+        String content = "";
+        int i;
+        int j;
+        int k;
+
+        while(buffer!=null){
+            if(!(buffer.startsWith("#") || buffer.startsWith(" #") || (buffer.trim().isEmpty()))){
+                k = buffer.indexOf("/");
+                buffer2 = buffer.substring(buffer.indexOf(" ",k));
+                buffer2 = buffer2.trim();
+                buffer = buffer.substring(0,buffer.indexOf(buffer2));
+
+                content += buffer + "controllers." + buffer2 + "\n";
+            }else{
+                content += buffer.substring(0,buffer.length()) + "\n";
+            }
+            buffer = br.readLine();
+        }
+        bf.write(content);
+        bf.flush();
+        bf.close();
+        return file;
+    }
 
     public void searchThroughDirectory (Result result, File dir) throws IOException {
         for (File file : dir.listFiles()){
@@ -137,19 +238,17 @@ public class LabelMessageChecker {
 
                         if (!configuration.readException.contains(message)) {
 
-                            // FIXME why do this multiple times?
+                            // FIXME why do this multiple times? -> Different variable of result get modified
                             getMessagesFiles();
                             try {
                                 while (true) {
                                     if (eng.readLine().contains(message)) {
-//                                                System.out.println(message);
                                         result.foundEng.add(message);
                                         break;
                                     }
                                 }
                             } catch (Exception m) {
                                 result.notFoundInTemplateEng.add(message);
-//                                        System.out.println("not in eng: " + message);
                                 notFound = true;
                             }
                             try {
